@@ -2,6 +2,9 @@
 requires = ["hatchling>=1.18.0"]
 build-backend = "hatchling.build"
 
+[tool.setuptools.package-data]
+flask_rlmt = ["*.pyi", "py.typed"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/flask_rlmt"]
 
