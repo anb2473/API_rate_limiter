@@ -230,17 +230,27 @@ TIME_PATTERN = re.compile(
 )
 
 def json_on_limited():
-    logs = g.logs
+    (
+        enforced_limit, limit_statistics,
+        endpoint,
+        identity,
+        logs,
+        retry_after,
+        remaining,
+        reset_at,
+        longest_limit_by_limit,
+        longest_limit_by_window
+    ) = g.logs
     return jsonify({
         "status": 429,
         "error": "Rate Limit Exceeded",
-        "retry_after": logs.retry_after,
-        "remaining": logs.remaining,
-        "reset_at": logs.reset_at.isoformat(),
-        "limit": logs.enforced_limit[0] if logs.enforced_limit else logs.longest_limit_by_limit[0],
-        "window": logs.enforced_limit[1] if logs.enforced_limit else None,
-        "endpoint": logs.endpoint,
-        "identity": logs.identity,
+        "retry_after": retry_after,
+        "remaining": remaining,
+        "reset_at": reset_at.isoformat(),
+        "limit": enforced_limit[0] if enforced_limit else longest_limit_by_limit[0],
+        "window": enforced_limit[1] if enforced_limit else None,
+        "endpoint": endpoint,
+        "identity": identity,
     }), 429
 
 @dataclass
@@ -269,7 +279,7 @@ class Limiter:
     def __init__(
         self,
         app:Flask,
-        limits:list[str | tuple[int, int]] | None=None,
+        rules:list[str | tuple[int, int]] | None=None,
         identity:Callable[[Request], Any]=lambda request: request.remote_addr,
         key_func:Callable[[Any], str]=lambda user: str(user),
         on_limited:Callable[[], Any]=json_on_limited,
@@ -277,7 +287,7 @@ class Limiter:
         check_db_delay:int=60,
         purge_db_delay:int=900
     ):
-        self.limits:list[tuple[int, int]] = [self.decode(limit) for limit in limits or []]
+        self.limits:list[tuple[int, int]] = [self.decode(limit) for limit in rules or []]
         self.identity:Callable[[Any], Any] | None = identity
         self.key_gen:Callable[[Any], str] | None = key_func
         self.on_limited:Callable[[], Any] = on_limited
@@ -378,7 +388,7 @@ class Limiter:
 
     def guard(
         self,
-        limits:list[str | tuple[int, int]],
+        rules:list[str | tuple[int, int]],
         identity:Callable[[Request], Any] | None=None,
         key_gen:Callable[[Any], str] | None=None,
         on_limited:Callable[[], Any] | None=None,
@@ -392,10 +402,10 @@ class Limiter:
                 if endpoint in self.cached_limits:
                     cleaned_limits = self.cached_limits[endpoint]
                 elif endpoint is not None:
-                    cleaned_limits = [self.decode(limit) for limit in limits]
+                    cleaned_limits = [self.decode(limit) for limit in rules]
                     self.cached_limits[endpoint] = cleaned_limits
                 else:
-                    cleaned_limits = [self.decode(limit) for limit in limits]
+                    cleaned_limits = [self.decode(limit) for limit in rules]
                 result = self.__check_limit(
                     cleaned_limits,
                     identity,
@@ -451,11 +461,12 @@ class Limiter:
     def apply(
         self,
         bp:Blueprint,
-        limits:list[str | tuple[int, int]],
+        rules:list[str | tuple[int, int]],
         identity:Callable[[Request], Any] | None=None,
         key_gen:Callable[[Any], str] | None=None,
         on_limited:Callable[[], Any] | None=None,
         exempt_when:list[Callable[[Any], bool]] | None=None
     ):
-        cleaned_limits = [self.decode(limit) for limit in limits]
+        cleaned_limits = [self.decode(limit) for limit in rules]
         self.cached_bps[bp.name] = RateLimitRule(cleaned_limits, bp, identity, key_gen, on_limited, exempt_when)
+        return None

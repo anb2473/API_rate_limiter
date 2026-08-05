@@ -1,6 +1,6 @@
-from flask import Flask, g, request
+from flask import Flask, g
 
-from limiter import Limiter
+from flask_rlmt import Limiter
 
 app = Flask(__name__)
 
