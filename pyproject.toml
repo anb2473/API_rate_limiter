@@ -10,7 +10,7 @@ packages = ["src/flask_rlmt"]
 
 [project]
 name="flask_rlmt"
-version="0.1.0"
+version="0.1.1"
 description="A rate limiter for flask"
 readme="README.md"
 authors=[
