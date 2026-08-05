@@ -2,8 +2,11 @@
 requires = ["hatchling>=1.18.0"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/flask_rlmt"]
+
 [project]
-name="flask-rlmt"
+name="flask_rlmt"
 version="0.1.0"
 description="A rate limiter for flask"
 readme="README.md"
