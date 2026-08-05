@@ -3,7 +3,7 @@ requires = ["hatchling>=1.18.0"]
 build-backend = "hatchling.build"
 
 [project]
-name="flask_rate_limiter"
+name="flask-rlmt"
 version="0.1.0"
 description="A rate limiter for flask"
 readme="README.md"
